@@ -144,6 +144,16 @@ pub struct Account {
     pub discord_id: Option<String>,
 }
 
+/// A character found by name, with its account.
+#[derive(Debug, Clone, Deserialize)]
+pub struct CharacterMatch {
+    pub id: u32,
+    pub name: String,
+    pub mode: String,
+    pub account_id: u32,
+    pub username: String,
+}
+
 /// An account linked to a Discord account.
 #[derive(Debug, Clone, Deserialize)]
 pub struct DiscordLink {
@@ -281,6 +291,16 @@ impl Client {
             return Ok(None);
         };
         self.account(a.id).await.map(Some)
+    }
+
+    /// Accounts whose username contains `search`, by username.
+    pub async fn search_accounts(&self, search: &str, limit: u32) -> Result<Vec<Account>> {
+        self.get(&format!("/v1/accounts?search={}&limit={limit}", urlencode(search))).await
+    }
+
+    /// Characters whose name contains `search`, by name.
+    pub async fn search_characters(&self, search: &str, limit: u32) -> Result<Vec<CharacterMatch>> {
+        self.get(&format!("/v1/characters?search={}&limit={limit}", urlencode(search))).await
     }
 
     pub async fn account(&self, id: u32) -> Result<Account> {

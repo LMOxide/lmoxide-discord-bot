@@ -135,6 +135,32 @@ pub async fn find_account(ctx: Context<'_>, username: &str) -> Result<api::Accou
     }
 }
 
+/// Discord shows at most 25 suggestions.
+const SUGGESTIONS: u32 = 25;
+
+/// Autocomplete for usernames (login names).
+pub async fn complete_username(ctx: Context<'_>, partial: &str) -> serenity::CreateAutocompleteResponse {
+    let found = ctx.data().api.search_accounts(partial.trim(), SUGGESTIONS).await.unwrap_or_default();
+    let choices = found.into_iter().map(|a| serenity::AutocompleteChoice::from(a.username)).collect();
+    serenity::CreateAutocompleteResponse::new().set_choices(choices)
+}
+
+/// Autocomplete for character (in-game) names, labelled with whose they are.
+pub async fn complete_character(ctx: Context<'_>, partial: &str) -> serenity::CreateAutocompleteResponse {
+    let found = ctx.data().api.search_characters(partial.trim(), SUGGESTIONS).await.unwrap_or_default();
+    let mut seen = std::collections::HashSet::new();
+    let choices = found
+        .into_iter()
+        .filter(|c| seen.insert(c.name.to_lowercase()))
+        .map(|c| {
+            let mut label = format!("{} ({}, {})", c.name, c.username, c.mode);
+            label.truncate(100);
+            serenity::AutocompleteChoice::new(label, c.name)
+        })
+        .collect();
+    serenity::CreateAutocompleteResponse::new().set_choices(choices)
+}
+
 /// Text that can't format or ping in a Discord message.
 pub fn clean(s: &str) -> String {
     s.replace('`', "'").replace('@', "@\u{200b}")

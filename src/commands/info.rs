@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use poise::{CreateReply, serenity_prelude as serenity};
 
-use super::{clean, find_account, relative, say};
+use super::{clean, complete_character, complete_username, find_account, refuse, relative, say};
 use crate::{Context, Error};
 
 /// Whether the game server is up, and how many are playing.
@@ -64,22 +64,30 @@ pub async fn online(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Look up a game account by its username, or by its Discord account.
-#[poise::command(slash_command, guild_only, subcommands("whois_account", "whois_discord"), subcommand_required)]
+/// Look up a game account by its username, its Discord account, or a character's name.
+#[poise::command(slash_command, guild_only, subcommands("whois_account", "whois_discord", "whois_player"), subcommand_required)]
 pub async fn whois(_ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+/// " (Discord: @member)" or "not linked".
+fn discord_of(a: &crate::api::Account) -> String {
+    match &a.discord_id {
+        Some(d) => format!("\nDiscord: <@{d}>"),
+        None => "\nNot linked to Discord".into(),
+    }
+}
+
 /// A game account by its username, with the Discord account it's linked to.
 #[poise::command(slash_command, rename = "account")]
-async fn whois_account(ctx: Context<'_>, #[description = "Login name"] username: String) -> Result<(), Error> {
+async fn whois_account(
+    ctx: Context<'_>,
+    #[description = "Login name"]
+    #[autocomplete = "complete_username"]
+    username: String,
+) -> Result<(), Error> {
     let a = find_account(ctx, &username).await?;
-    let mut text = super::account::describe(&ctx.data().cfg(), &a);
-    match &a.discord_id {
-        Some(d) => text += &format!("\nDiscord: <@{d}>"),
-        None => text += "\nNot linked to Discord",
-    }
-    say(ctx, text).await
+    say(ctx, super::account::describe(&ctx.data().cfg(), &a) + &discord_of(&a)).await
 }
 
 /// The game account a Discord member is linked to.
@@ -91,4 +99,45 @@ async fn whois_discord(ctx: Context<'_>, #[description = "Discord member"] user:
     };
     let a = data.api.account(link.account_id).await?;
     say(ctx, format!("<@{}>: {}", user.id, super::account::describe(&data.cfg(), &a))).await
+}
+
+/// Who plays a character: the game account and its Discord account.
+#[poise::command(slash_command, rename = "player")]
+async fn whois_player(
+    ctx: Context<'_>,
+    #[description = "Character name, as shown in game"]
+    #[autocomplete = "complete_character"]
+    name: String,
+) -> Result<(), Error> {
+    let data = ctx.data();
+    let name = name.trim();
+    let found = data.api.search_characters(name, 100).await?;
+    let exact: Vec<_> = found.iter().filter(|c| c.name.eq_ignore_ascii_case(name)).collect();
+    if exact.is_empty() {
+        let mut text = format!("There's no character named `{}`.", clean(name));
+        if !found.is_empty() {
+            let names: Vec<_> = found.iter().take(10).map(|c| format!("`{}`", clean(&c.name))).collect();
+            text += &format!(" Similar: {}", names.join(", "));
+        }
+        return refuse(text);
+    }
+    // a name can be on several characters (one per game mode, or different players)
+    let mut text = String::new();
+    let mut accounts = Vec::new();
+    for c in &exact {
+        if !accounts.contains(&c.account_id) {
+            accounts.push(c.account_id);
+        }
+    }
+    for id in accounts {
+        let a = data.api.account(id).await?;
+        let modes: Vec<_> = exact.iter().filter(|c| c.account_id == id).map(|c| c.mode.as_str()).collect();
+        if !text.is_empty() {
+            text += "\n\n";
+        }
+        text += &format!("`{}` ({}) is played by ", clean(name), modes.join(", "));
+        text += &super::account::describe(&data.cfg(), &a);
+        text += &discord_of(&a);
+    }
+    say(ctx, text).await
 }

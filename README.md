@@ -11,7 +11,7 @@ roles decide their GM level in game.
 | `/reset-password` | linked members | DMs a one-time sign-in link to the web UI, which asks for a new password |
 | `/account` | linked members | their game account: GM level, characters, last login, ban |
 | `/status`, `/online` | everyone | whether the game server is up; who is playing and where (answered in the channel) |
-| `/whois account <username>`, `/whois discord <member>` | everyone | a game account by login name (with its Discord account), or the game account a Discord member is linked to |
+| `/whois account <username>`, `/whois discord <member>`, `/whois player <character>` | everyone | a game account by login name, by Discord member, or by character name, with the Discord account it's linked to; usernames and character names autocomplete |
 | `/kick`, `/ban`, `/unban`, `/announce` | GMs (by role) | moderation, done as their own game account |
 | `/bot sync`, `/bot reload`, `/bot info`, `/bot unlink` | bot admins | sync now, re-read the settings, look up or unlink a member |
 

@@ -1,14 +1,16 @@
 //! Moderation, done with the caller's own account key: the API decides from their GM level
 //! (which follows their Discord roles) whether they may, and the audit log names them.
 
-use super::{as_caller, clean, find_account, relative, say};
+use super::{as_caller, clean, complete_username, find_account, relative, say};
 use crate::{Context, Error};
 
 /// Disconnect a player from the game.
 #[poise::command(slash_command, guild_only)]
 pub async fn kick(
     ctx: Context<'_>,
-    #[description = "Login name"] username: String,
+    #[description = "Login name"]
+    #[autocomplete = "complete_username"]
+    username: String,
     #[description = "Shown in the audit log"]
     #[max_length = 200]
     reason: Option<String>,
@@ -28,7 +30,9 @@ pub async fn kick(
 #[poise::command(slash_command, guild_only)]
 pub async fn ban(
     ctx: Context<'_>,
-    #[description = "Login name"] username: String,
+    #[description = "Login name"]
+    #[autocomplete = "complete_username"]
+    username: String,
     #[description = "Length in days; leave empty for a permanent ban"]
     #[min = 1]
     #[max = 3650]
@@ -50,7 +54,12 @@ pub async fn ban(
 
 /// Lift an account's ban.
 #[poise::command(slash_command, guild_only)]
-pub async fn unban(ctx: Context<'_>, #[description = "Login name"] username: String) -> Result<(), Error> {
+pub async fn unban(
+    ctx: Context<'_>,
+    #[description = "Login name"]
+    #[autocomplete = "complete_username"]
+    username: String,
+) -> Result<(), Error> {
     let a = find_account(ctx, &username).await?;
     let api = ctx.data().api.clone();
     as_caller(ctx, |who| {
