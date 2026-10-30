@@ -56,6 +56,18 @@ export LMOXIDE_API_KEY=lmox_...            # lmoxide-api key create discord-bot 
 cargo run --release
 ```
 
+## Install without Rust
+
+Every version tag publishes the bot:
+
+| | |
+|---|---|
+| Image | `ghcr.io/lmoxide/lmoxide-discord-bot` (`latest` or a version) |
+| Binary | `lmoxide-discord-bot-<version>-x86_64-linux.tar.gz` on the [Releases](https://github.com/LMOxide/lmoxide-discord-bot/releases) page (glibc 2.36 or newer: Debian 12, Ubuntu 24.04) |
+
+LMOxide's `docker-compose.yml` runs the image next to the server, behind its `discord` profile
+([HOSTING.md](https://github.com/LMOxide/lmoxide/blob/main/docs/HOSTING.md)).
+
 ## Development
 
 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): a local API to develop against, tests, and the API

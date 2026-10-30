@@ -45,15 +45,19 @@ If it's lost, the bot makes new keys at the next sync.
 
 ## 4. Docker, next to the LMOxide stack
 
+LMOxide's `docker-compose.yml` already has the bot, behind the `discord` profile: see
+[HOSTING.md](https://github.com/LMOxide/lmoxide/blob/main/docs/HOSTING.md) in lmoxide. It runs
+the published image `ghcr.io/lmoxide/lmoxide-discord-bot`. To build the image yourself:
+
 ```sh
 docker build -t lmoxide-discord-bot .
 ```
 
-In LMOxide's `docker-compose.yml`:
+The service looks like this:
 
 ```yaml
   discord-bot:
-    image: lmoxide-discord-bot:latest
+    image: ghcr.io/lmoxide/lmoxide-discord-bot:latest
     restart: unless-stopped
     environment:
       LMOXIDE_API_URL: http://lmoxide:8080
