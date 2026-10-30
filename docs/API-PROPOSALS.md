@@ -1,5 +1,11 @@
 # Proposed API changes
 
+> **All seven items are built on lmoxide's `discord-api` branch (`f641153`), not yet merged into
+> main.** The web UI side is on lmoxide-webui's `discord` branch (`d43fdf6`). The bot's live test
+> (`docs/DEVELOPMENT.md`) passes against that branch. Beyond the proposal, `ApiKey` has an
+> `account_id` (account keys show scope `read`, which isn't used), and a bad id, username or
+> password in `POST /v1/discord/accounts` answers 422 `invalid`.
+
 Changes to `lmoxide-api` (in the [lmoxide](https://github.com/LMOxide/lmoxide) repo) that the
 Discord bot needs. Written 2026-10-29, before the first version of the bot. The API knew nothing
 about Discord and had no per-user credentials, so these features had no API routes:
