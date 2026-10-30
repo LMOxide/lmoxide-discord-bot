@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use poise::{CreateReply, serenity_prelude as serenity};
 
 use super::{clean, complete_character, complete_username, find_account, refuse, relative, say};
-use crate::{Context, Error};
+use crate::{Context, Error, api};
 
 /// Whether the game server is up, and how many are playing.
 #[poise::command(slash_command, guild_only)]
@@ -30,6 +30,74 @@ pub async fn status(ctx: Context<'_>) -> Result<(), Error> {
         text += &format!("\n-# LMOxide {}", clean(&v));
     }
     ctx.send(CreateReply::default().content(text)).await?;
+    Ok(())
+}
+
+/// What the bot itself was built from (build.rs).
+fn bot_build() -> api::Build {
+    let some = |s: &str| (!s.is_empty()).then(|| s.to_string());
+    api::Build {
+        version: env!("CARGO_PKG_VERSION").into(),
+        commit: some(env!("BOT_GIT_COMMIT")),
+        commit_time: env!("BOT_GIT_COMMIT_TIME").parse().ok(),
+        built: env!("BOT_BUILD_TIME").parse().ok(),
+    }
+}
+
+/// One line of `/version`: the version, the commit (linked to its repository) and when it was
+/// committed and built.
+fn build_line(what: &str, repo: &str, b: &api::Build) -> String {
+    let mut s = format!("**{what}** {}", clean(&b.version));
+    if let Some(c) = &b.commit {
+        let short: String = c.chars().take(7).collect();
+        if c.chars().all(|ch| ch.is_ascii_hexdigit()) {
+            s += &format!(" · [`{short}`](<https://github.com/LMOxide/{repo}/commit/{c}>)");
+        } else {
+            s += &format!(" · `{}`", clean(&short));
+        }
+    }
+    if let Some(t) = b.commit_time {
+        s += &format!(", committed {}", relative(t));
+    }
+    if let Some(t) = b.built {
+        s += &format!(" · built {}", relative(t));
+    }
+    s
+}
+
+/// What the bot, the API, the game server and the web UIs were built from (version, commit, when).
+#[poise::command(slash_command, guild_only)]
+pub async fn version(ctx: Context<'_>) -> Result<(), Error> {
+    let data = ctx.data();
+    let cfg = data.cfg();
+    let mut lines = vec![build_line("Bot", "lmoxide-discord-bot", &bot_build())];
+    match data.api.version().await {
+        Ok(v) => {
+            match &v.game_server {
+                Some(g) => {
+                    let mut line = build_line("Game server", "lmoxide", g);
+                    if let Some(t) = v.game_server_started_at {
+                        line += &format!(" · up since {}", relative(t));
+                    }
+                    lines.push(line);
+                }
+                None => lines.push("**Game server**: offline".into()),
+            }
+            // (one process with the game server in the usual setup: said once)
+            if v.game_server.as_ref().is_none_or(|g| g.commit != v.api.commit || g.version != v.api.version) {
+                lines.push(build_line("API", "lmoxide", &v.api));
+            }
+        }
+        Err(e) => lines.push(format!("**API**: {}", e.describe())),
+    }
+    for (what, repo, url) in [("Web UI", "lmoxide-webui", Some(&cfg.webui_url)), ("Dev UI", "lmoxide-dev-ui", cfg.dev_ui_url.as_ref())] {
+        if let Some(url) = url
+            && let Some(b) = data.api.ui_version(url).await
+        {
+            lines.push(build_line(what, repo, &b));
+        }
+    }
+    ctx.send(CreateReply::default().content(lines.join("\n"))).await?;
     Ok(())
 }
 

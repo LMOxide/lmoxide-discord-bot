@@ -19,6 +19,8 @@ pub fn all() -> Vec<poise::Command<Data, Error>> {
         info::status(),
         info::online(),
         info::whois(),
+        info::version(),
+        account::friend(),
         moderation::kick(),
         moderation::ban(),
         moderation::unban(),

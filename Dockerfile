@@ -4,6 +4,11 @@
 FROM rust:1-bookworm AS build
 WORKDIR /src
 COPY . .
+# what /version says about the bot (.git isn't copied in): the release workflow and lmoxide's
+# docker-compose.build.yml pass the commit and its unix time
+ARG GIT_COMMIT=""
+ARG GIT_COMMIT_TIME=""
+ENV GIT_COMMIT=$GIT_COMMIT GIT_COMMIT_TIME=$GIT_COMMIT_TIME
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
     cargo build --release --locked && cp target/release/lmoxide-discord-bot /lmoxide-discord-bot

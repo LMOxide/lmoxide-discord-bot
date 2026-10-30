@@ -1,10 +1,12 @@
 //! The LMOxide Discord bot: registers game accounts for members of the Discord server, links
 //! existing ones, sends sign-in codes for password resets, keeps GM levels in step with Discord
-//! roles, and runs status and moderation commands. It talks only to the LMOxide REST API.
+//! roles, sends account friend requests by DM, and runs status and moderation commands. It talks
+//! only to the LMOxide REST API.
 
 mod api;
 mod commands;
 mod config;
+mod friends;
 mod store;
 mod sync;
 

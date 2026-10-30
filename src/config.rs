@@ -17,6 +17,9 @@ pub struct Config {
     pub api_url: String,
     /// The web UI, for links in DMs (`/account`, `/login`).
     pub webui_url: String,
+    /// The dev UI (debugger, world editor), for `/version` (its `version.json`); none: not shown.
+    #[serde(default)]
+    pub dev_ui_url: Option<String>,
     /// The Discord server: only its members can register or link, and commands are registered
     /// there.
     pub guild_id: u64,
@@ -86,6 +89,7 @@ impl Config {
         }
         cfg.api_url = cfg.api_url.trim_end_matches('/').to_string();
         cfg.webui_url = cfg.webui_url.trim_end_matches('/').to_string();
+        cfg.dev_ui_url = cfg.dev_ui_url.map(|u| u.trim_end_matches('/').to_string()).filter(|u| !u.is_empty());
         cfg.validate()?;
         Ok(cfg)
     }

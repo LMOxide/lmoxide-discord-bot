@@ -7,6 +7,9 @@
 api_url = "http://127.0.0.1:8090"
 # The web UI, for the links the bot sends (linking an account, password resets).
 webui_url = "http://localhost:5173"
+# The dev UI (debugger, world editor), for /version (its version.json); leave out to not show it.
+# Next to the compose stack: the web UI's address + /dev
+# dev_ui_url = "http://localhost:5174"
 
 # The Discord server. Only its members can register or link an account.
 guild_id = 100000000000000000

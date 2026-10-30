@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use poise::{Modal, serenity_prelude as serenity};
 
-use super::{clean, date, member_roles, refuse, relative, say, user_id};
+use super::{as_caller, clean, complete_username, date, member_roles, refuse, relative, say, user_id};
 use crate::{Context, Data, Error, api, sync};
 
 #[derive(Debug, Modal)]
@@ -194,6 +194,36 @@ pub fn describe(cfg: &crate::config::Config, a: &api::Account) -> String {
         s += &format!("\nBanned {until}{reason}");
     }
     s
+}
+
+/// Ask a game account to be friends: all your characters with all of theirs, once they accept.
+#[poise::command(slash_command, guild_only)]
+pub async fn friend(
+    ctx: Context<'_>,
+    #[description = "Their username (login name)"]
+    #[autocomplete = "complete_username"]
+    username: String,
+) -> Result<(), Error> {
+    let username = username.trim().to_string();
+    let f = as_caller(ctx, |who| {
+        let (data, username) = (ctx.data(), username.clone());
+        async move { data.api.request_friend(&who, &username).await }
+    })
+    .await?;
+    let web = ctx.data().cfg().webui_url.clone();
+    if f.state == "friends" {
+        say(ctx, format!("**{}** had asked you already: you are friends now, all your characters and theirs.", clean(&f.username))).await
+    } else {
+        say(
+            ctx,
+            format!(
+                "Asked **{}**. Once they accept (by DM if they linked Discord, or on <{web}/friends>), all your characters \
+                 and theirs are friends.",
+                clean(&f.username)
+            ),
+        )
+        .await
+    }
 }
 
 /// DMs the caller; refuses with advice if their DMs are closed.

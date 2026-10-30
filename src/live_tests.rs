@@ -131,3 +131,39 @@ async fn live_register_keys_and_codes() {
     let admin = l.login("admin", "admin-password").await;
     l.delete_account(&admin, me.id).await;
 }
+
+#[tokio::test]
+async fn live_account_friends_and_version() {
+    let Some(l) = live() else {
+        eprintln!("LMOXIDE_TEST_API/LMOXIDE_TEST_KEY not set: skipped");
+        return;
+    };
+    let api = &l.api;
+    let v = api.version().await.unwrap();
+    assert_eq!(v.api.version.split('.').count(), 3, "{v:?}");
+
+    // the demo player asks a member linked to Discord: the bot sees it once, the member accepts
+    let did = unique();
+    let reg = api.register(did, &format!("bot_friend_{}", did % 1_000_000), "first-password", 0).await.unwrap();
+    let player = l.login("player", "player-password").await;
+    let (s, f) = l.post(Some(&player), "/v1/me/friends", json!({"username": reg.link.username})).await;
+    assert_eq!((s, f["state"].as_str()), (201, Some("outgoing")), "{f}");
+    let waiting = api.friend_requests().await.unwrap();
+    let r = waiting.iter().find(|r| r.target_id == reg.link.account_id).expect("the request waits for a DM");
+    assert_eq!((r.requester_username.as_str(), r.discord_id.as_str()), ("player", &*did.to_string()));
+    api.friend_request_sent(r.requester_id, r.target_id).await.unwrap();
+    assert!(!api.friend_requests().await.unwrap().iter().any(|r| r.target_id == reg.link.account_id));
+    let member = As::Account(reg.key.secret.clone());
+    let f = api.accept_friend(&member, r.requester_id).await.unwrap();
+    assert_eq!((f.username.as_str(), f.state.as_str()), ("player", "friends"));
+    assert!(api.accept_friend(&member, r.requester_id).await.unwrap_err().is_not_found(), "answered already");
+
+    // and back: a request from the member, turned down
+    let r2 = api.request_friend(&member, "admin").await.unwrap();
+    assert_eq!(r2.state, "outgoing");
+    let admin = l.login("admin", "admin-password").await;
+    let resp = l.http.post(format!("{}/v1/me/friends/{}/reject", l.base, reg.link.account_id)).bearer_auth(&admin).send().await.unwrap();
+    assert_eq!(resp.status().as_u16(), 204);
+
+    l.delete_account(&admin, reg.link.account_id).await;
+}

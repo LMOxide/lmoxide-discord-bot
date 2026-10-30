@@ -195,6 +195,45 @@ pub struct Affected {
     pub affected: u32,
 }
 
+/// What a program was built from (`/v1/version`, a web UI's `version.json`, the bot's own).
+#[derive(Debug, Clone, Deserialize)]
+pub struct Build {
+    pub version: String,
+    /// The full git commit hash.
+    pub commit: Option<String>,
+    /// Unix time of that commit.
+    pub commit_time: Option<i64>,
+    /// Unix time it was built.
+    pub built: Option<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Versions {
+    pub api: Build,
+    /// None while the game server doesn't answer.
+    pub game_server: Option<Build>,
+    pub game_server_started_at: Option<i64>,
+}
+
+/// An account friend request to a member linked to Discord that the bot hasn't sent yet.
+#[derive(Debug, Clone, Deserialize)]
+pub struct FriendRequest {
+    pub requester_id: u32,
+    pub requester_username: String,
+    pub target_id: u32,
+    pub target_username: String,
+    pub discord_id: String,
+    pub requested_at: i64,
+}
+
+/// Another account as the caller sees it: `state` is `friends`, `incoming` or `outgoing`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct AccountFriend {
+    pub account_id: u32,
+    pub username: String,
+    pub state: String,
+}
+
 // ------------------------------------------------------------------ client
 
 /// Who a request is made as.
@@ -283,6 +322,18 @@ impl Client {
         self.get("/v1/config").await
     }
 
+    /// What the API and the game server were built from.
+    pub async fn version(&self) -> Result<Versions> {
+        self.get("/v1/version").await
+    }
+
+    /// A web UI's `version.json` (its own address, no key); none if it has none (older builds
+    /// answer with their index page).
+    pub async fn ui_version(&self, base: &str) -> Option<Build> {
+        let resp = self.http.get(format!("{}/version.json", base.trim_end_matches('/'))).send().await.ok()?;
+        resp.error_for_status().ok()?.json().await.ok()
+    }
+
     /// The account with exactly this username (case-insensitive).
     pub async fn account_by_name(&self, username: &str) -> Result<Option<Account>> {
         let path = format!("/v1/accounts?search={}&limit=50", urlencode(username));
@@ -350,6 +401,32 @@ impl Client {
     pub async fn code(&self, discord_id: u64, purpose: CodePurpose) -> Result<Code> {
         let body = serde_json::json!({ "discord_id": discord_id.to_string(), "purpose": purpose });
         self.send(&As::BOT, Method::POST, "/v1/discord/codes", Some(body)).await
+    }
+
+    // ---------------------------------------------------------------- account friends
+
+    /// Requests to linked members the bot hasn't sent by DM yet, oldest first.
+    pub async fn friend_requests(&self) -> Result<Vec<FriendRequest>> {
+        self.get("/v1/discord/friend-requests").await
+    }
+
+    /// The bot sent this request (it isn't listed again).
+    pub async fn friend_request_sent(&self, requester: u32, target: u32) -> Result<()> {
+        self.send(&As::BOT, Method::POST, &format!("/v1/discord/friend-requests/{requester}/{target}/notified"), None).await
+    }
+
+    /// Asks another account, as `who` (an account key).
+    pub async fn request_friend(&self, who: &As, username: &str) -> Result<AccountFriend> {
+        let body = serde_json::json!({ "username": username });
+        self.send(who, Method::POST, "/v1/me/friends", Some(body)).await
+    }
+
+    pub async fn accept_friend(&self, who: &As, account_id: u32) -> Result<AccountFriend> {
+        self.send(who, Method::POST, &format!("/v1/me/friends/{account_id}/accept"), None).await
+    }
+
+    pub async fn reject_friend(&self, who: &As, account_id: u32) -> Result<()> {
+        self.send(who, Method::POST, &format!("/v1/me/friends/{account_id}/reject"), None).await
     }
 
     // ---------------------------------------------------------------- moderation

@@ -176,6 +176,15 @@ pub async fn on_event(fw: poise::FrameworkContext<'_, Data, Error>, event: &sere
     match event {
         serenity::FullEvent::Ready { .. } if !data.sync_started.swap(true, std::sync::atomic::Ordering::SeqCst) => {
             start_periodic(ctx.clone(), data.clone());
+            crate::friends::start(ctx.clone(), data.clone());
+        }
+        serenity::FullEvent::InteractionCreate { interaction: serenity::Interaction::Component(c) } if crate::friends::is_ours(c) => {
+            let (ctx, data, c) = (ctx.clone(), data.clone(), c.clone());
+            tokio::spawn(async move {
+                if let Err(e) = crate::friends::on_button(&ctx, &data, &c).await {
+                    tracing::warn!("friend request button: {e:#}");
+                }
+            });
         }
         serenity::FullEvent::GuildMemberAddition { new_member } if new_member.guild_id == guild => {
             one(new_member.user.id.get(), Some(role_ids(new_member)));

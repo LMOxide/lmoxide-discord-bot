@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # what /version says about the bot (the Dockerfile's build arguments)
+      - run: echo "COMMIT_TIME=$(git log -1 --format=%ct)" >> "$GITHUB_ENV"
       - uses: docker/setup-buildx-action@v3
       # the binary alone (the Dockerfile's dist stage), then the image from the same build
       - uses: docker/build-push-action@v6
@@ -27,6 +29,9 @@ jobs:
           context: .
           target: dist
           outputs: type=local,dest=out
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            GIT_COMMIT_TIME=${{ env.COMMIT_TIME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Archive
@@ -58,6 +63,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            GIT_COMMIT_TIME=${{ env.COMMIT_TIME }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
