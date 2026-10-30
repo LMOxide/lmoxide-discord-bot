@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use poise::CreateReply;
+use poise::{CreateReply, serenity_prelude as serenity};
 
 use super::{clean, find_account, relative, say};
 use crate::{Context, Error};
@@ -64,13 +64,31 @@ pub async fn online(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/// Look up a game account by its username.
-#[poise::command(slash_command, guild_only)]
-pub async fn whois(ctx: Context<'_>, #[description = "Login name"] username: String) -> Result<(), Error> {
+/// Look up a game account by its username, or by its Discord account.
+#[poise::command(slash_command, guild_only, subcommands("whois_account", "whois_discord"), subcommand_required)]
+pub async fn whois(_ctx: Context<'_>) -> Result<(), Error> {
+    Ok(())
+}
+
+/// A game account by its username, with the Discord account it's linked to.
+#[poise::command(slash_command, rename = "account")]
+async fn whois_account(ctx: Context<'_>, #[description = "Login name"] username: String) -> Result<(), Error> {
     let a = find_account(ctx, &username).await?;
     let mut text = super::account::describe(&ctx.data().cfg(), &a);
-    if let Some(d) = &a.discord_id {
-        text += &format!("\nDiscord: <@{d}>");
+    match &a.discord_id {
+        Some(d) => text += &format!("\nDiscord: <@{d}>"),
+        None => text += "\nNot linked to Discord",
     }
     say(ctx, text).await
+}
+
+/// The game account a Discord member is linked to.
+#[poise::command(slash_command, rename = "discord")]
+async fn whois_discord(ctx: Context<'_>, #[description = "Discord member"] user: serenity::User) -> Result<(), Error> {
+    let data = ctx.data();
+    let Some(link) = data.api.link(user.id.get()).await? else {
+        return say(ctx, format!("<@{}> isn't linked to a game account.", user.id)).await;
+    };
+    let a = data.api.account(link.account_id).await?;
+    say(ctx, format!("<@{}>: {}", user.id, super::account::describe(&data.cfg(), &a))).await
 }
