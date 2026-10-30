@@ -1,0 +1,45 @@
+# LMOxide Discord bot settings. Copy to config.toml and adjust.
+# Secrets are not kept here: set DISCORD_TOKEN and LMOXIDE_API_KEY in the environment, or
+# DISCORD_TOKEN_FILE / LMOXIDE_API_KEY_FILE, or the *_file settings below.
+# `/bot reload` re-reads this file; changes to guild_id, data_dir and the secrets need a restart.
+
+# The LMOxide REST API, without /v1. Next to the compose stack: http://api:8090
+api_url = "http://127.0.0.1:8090"
+# The web UI, for the links the bot sends (linking an account, password resets).
+webui_url = "http://localhost:5173"
+
+# The Discord server. Only its members can register or link an account.
+guild_id = 1563439888093937844
+
+# Discord users who may do anything with the bot (/bot commands; moderation without a linked
+# account).
+admins = [
+  789705048035688458,
+  165540221100752897,
+]
+
+# The bot's database (the account keys it holds), relative to this file.
+data_dir = "data"
+
+# Minutes between full role/GM syncs. A sync also runs at startup and when members change.
+sync_interval_minutes = 15
+
+# discord_token_file = "secrets/discord-token"
+# api_key_file = "secrets/lmoxide-api-key"
+
+[roles]
+# Given to everyone who registers or links an account.
+alpha_tester = 1565381275907260587
+
+# Discord roles that give a GM level in game; the highest one a member has wins. Members with
+# none of them, or who left the server, get GM 0. This overrides GM levels set elsewhere for
+# accounts linked to Discord.
+[[gm_roles]]
+name = "Admin"
+role = 1564534105796776037
+gm_level = 2
+
+[[gm_roles]]
+name = "Contributor"
+role = 1565380735110479923
+gm_level = 1

@@ -1,0 +1,5 @@
+target/
+data/
+secrets/
+config.toml
+.git/
