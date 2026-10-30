@@ -9,13 +9,13 @@ api_url = "http://127.0.0.1:8090"
 webui_url = "http://localhost:5173"
 
 # The Discord server. Only its members can register or link an account.
-guild_id = 1563439888093937844
+guild_id = 100000000000000000
 
 # Discord users who may do anything with the bot (/bot commands; moderation without a linked
 # account).
 admins = [
-  789705048035688458,
-  165540221100752897,
+  100000000000000001,
+  100000000000000002,
 ]
 
 # The bot's database (the account keys it holds), relative to this file.
@@ -29,17 +29,24 @@ sync_interval_minutes = 15
 
 [roles]
 # Given to everyone who registers or links an account.
-alpha_tester = 1565381275907260587
+alpha_tester = 100000000000000013
 
-# Discord roles that give a GM level in game; the highest one a member has wins. Members with
-# none of them, or who left the server, get GM 0. This overrides GM levels set elsewhere for
-# accounts linked to Discord.
+# Discord roles that give a GM level in game; the highest one a member has wins (LMOxide's
+# docs/SECURITY.md "Access levels": 1 alpha tester: the play modes and the testers' commands;
+# 2 contributor: the world editor, every test command, the client's GM tools; 3 moderator;
+# 4 admin). Members with none of them, or who left the server, get GM 0. This overrides GM
+# levels set elsewhere for accounts linked to Discord.
 [[gm_roles]]
 name = "Admin"
-role = 1564534105796776037
-gm_level = 2
+role = 100000000000000011
+gm_level = 4
 
 [[gm_roles]]
 name = "Contributor"
-role = 1565380735110479923
+role = 100000000000000012
+gm_level = 2
+
+[[gm_roles]]
+name = "Alpha Tester"
+role = 100000000000000013
 gm_level = 1

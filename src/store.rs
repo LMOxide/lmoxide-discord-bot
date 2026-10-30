@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn keys() {
         let s = Store::in_memory();
-        let big = 1563439888093937844u64;
+        let big = 100000000000000000u64;
         assert_eq!(s.key(big).unwrap(), None);
         s.set_key(big, 7, "lmox_a").unwrap();
         s.set_key(big, 7, "lmox_b").unwrap();

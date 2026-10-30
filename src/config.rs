@@ -145,9 +145,9 @@ mod tests {
     fn example_config_parses() {
         let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let cfg = Config::load(&dir.join("config.example.toml")).unwrap();
-        assert_eq!(cfg.guild_id, 1563439888093937844);
+        assert_eq!(cfg.guild_id, 100000000000000000);
         assert_eq!(cfg.data_dir, dir.join("data"));
-        assert!(cfg.is_admin(789705048035688458));
+        assert!(cfg.is_admin(100000000000000001));
         assert!(!cfg.is_admin(1));
     }
 
@@ -155,13 +155,14 @@ mod tests {
     fn highest_role_wins() {
         let dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let cfg = Config::load(&dir.join("config.example.toml")).unwrap();
-        let admin = 1564534105796776037;
-        let contributor = 1565380735110479923;
-        let alpha = 1565381275907260587;
+        let admin = 100000000000000011;
+        let contributor = 100000000000000012;
+        let alpha = 100000000000000013;
         assert_eq!(cfg.gm_level_for(None), 0);
-        assert_eq!(cfg.gm_level_for(Some(&[alpha])), 0);
-        assert_eq!(cfg.gm_level_for(Some(&[alpha, contributor])), 1);
-        assert_eq!(cfg.gm_level_for(Some(&[contributor, admin])), 2);
-        assert_eq!(cfg.gm_role_name(1), Some("Contributor"));
+        assert_eq!(cfg.gm_level_for(Some(&[alpha])), 1);
+        assert_eq!(cfg.gm_level_for(Some(&[alpha, contributor])), 2);
+        assert_eq!(cfg.gm_level_for(Some(&[contributor, admin])), 4);
+        assert_eq!(cfg.gm_role_name(2), Some("Contributor"));
+        assert_eq!(cfg.gm_role_name(1), Some("Alpha Tester"));
     }
 }

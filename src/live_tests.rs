@@ -77,11 +77,14 @@ async fn live_register_keys_and_codes() {
     // the account key's rights follow the GM level
     let user = As::Account(reg.key.secret.clone());
     assert_eq!(api.broadcast(&user, "test").await.unwrap_err().code(), Some("forbidden"));
-    let after = api.set_gm_level(did, 1).await.unwrap();
-    assert_eq!(after.gm_level, 1);
+    // a contributor (2) still can't, a moderator (3) can
+    api.set_gm_level(did, 2).await.unwrap();
+    assert_eq!(api.broadcast(&user, "test").await.unwrap_err().code(), Some("forbidden"));
+    let after = api.set_gm_level(did, 3).await.unwrap();
+    assert_eq!(after.gm_level, 3);
     match api.broadcast(&user, "bot test").await {
         Ok(_) => {}
-        Err(e) => assert_ne!(e.code(), Some("forbidden"), "GM 1 may broadcast: {e}"),
+        Err(e) => assert_ne!(e.code(), Some("forbidden"), "GM 3 may broadcast: {e}"),
     }
     api.set_gm_level(did, 0).await.unwrap();
 

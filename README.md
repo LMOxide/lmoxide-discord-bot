@@ -28,8 +28,10 @@ The bot talks only to the LMOxide REST API (`lmoxide-api`), with two kinds of ke
   in the bot's database (`data/bot.db`). Commands such as `/kick` run with the caller's key, so
   the API decides from their GM level whether they may, and the audit log names their account.
 
-**Roles → GM levels.** `gm_roles` in the settings maps Discord roles to GM levels (Admin → 2,
-Contributor → 1). The highest one wins. Members with none of them, or who left the server, get
+**Roles → GM levels.** `gm_roles` in the settings maps Discord roles to GM levels (Admin → 4,
+Contributor → 2, Alpha Tester → 1; LMOxide's `docs/SECURITY.md` "Access levels": alpha testers
+play and use the testers' commands from the dev UI, contributors also get the world editor and
+the client's GM tools). The highest one wins. Members with none of them, or who left the server, get
 GM 0 and keep their account. Discord decides: a GM level set elsewhere on a linked account is
 overwritten at the next sync. The bot syncs at startup (things may have changed while it was
 offline), every `sync_interval_minutes`, on `/bot sync`, and at once when a member's roles change
